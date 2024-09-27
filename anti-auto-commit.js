@@ -48,8 +48,8 @@ exit 0
 }
 
 // Executa se chamado diretamente
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   setupAntiAutoCommit();
 }
 
-module.exports = { setupAntiAutoCommit };
+export { setupAntiAutoCommit };

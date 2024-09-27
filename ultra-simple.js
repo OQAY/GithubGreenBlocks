@@ -32,7 +32,7 @@ const data = { date: commitDate, message: "Single commit" };
     await jsonfile.writeFile(path, data);
     console.log("📝 Arquivo escrito");
 
-    // Commit
+    // Commit com autorização manual
     await git.add([path]);
     await git.commit(commitDate, { "--date": commitDate });
     console.log("✅ Commit criado");
