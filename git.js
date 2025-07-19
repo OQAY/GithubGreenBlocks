@@ -15,7 +15,7 @@ const createCommits = async (commitCount) => {
 
     // Força a configuração do remote correto
     await git.removeRemote("origin");
-    await git.addRemote("origin", "https://github.com/OQAY/goGreen.git");
+    await git.addRemote("origin", "https://github.com/OQAY/CommitLovers.git");
 
     // Verifica se estamos em um repositório Git
     const isRepo = await git.checkIsRepo();
@@ -23,9 +23,23 @@ const createCommits = async (commitCount) => {
       throw new Error("Não é um repositório Git válido");
     }
 
+    // Verifica se já existem commits
+    const log = await git.log();
+    if (log.all.length > 0) {
+      console.log(`⚠️  Já existem ${log.all.length} commits no repositório`);
+      console.log("💡 Execute 'node clean-commits.js' para limpar primeiro");
+      return;
+    }
+
     console.log(`Iniciando criação de ${commitCount} commits...`);
 
     for (let i = 0; i < commitCount; i++) {
+      // Verificação de segurança
+      if (i > 100) {
+        console.log("⚠️  Limite de segurança atingido (100 commits)");
+        break;
+      }
+
       // Gera semanas e dias aleatórios para o passado
       const weeksAgo = random.int(0, 54);
       const daysAgo = random.int(0, 6);
@@ -77,7 +91,7 @@ const createCommits = async (commitCount) => {
  * Função principal
  */
 const main = async () => {
-  const commitCount = 100; // Número de commits a serem criados
+  const commitCount = 1; // Número de commits a serem criados
 
   console.log("🚀 Iniciando processo de criação de commits...");
   await createCommits(commitCount);
