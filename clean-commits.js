@@ -31,7 +31,7 @@ const cleanCommits = async () => {
 
     // Força o push para sobrescrever completamente o histórico
     console.log("📤 Forçando push para sobrescrever histórico...");
-    await git.push(["--force-with-lease", "origin", "main"]);
+    await git.push(["--force", "origin", "main"]);
 
     console.log("✅ Repositório completamente limpo!");
     console.log("🆕 Agora tem apenas 1 commit inicial");
@@ -42,10 +42,11 @@ const cleanCommits = async () => {
     try {
       // Método alternativo: deletar e recriar o repositório
       console.log("🔄 Recriando repositório...");
-      await git.init();
-      await git.add(".");
-      await git.commit("Initial commit - Fresh start");
-      await git.push(["--force", "origin", "main"]);
+      const newGit = simpleGit();
+      await newGit.init();
+      await newGit.add(".");
+      await newGit.commit("Initial commit - Fresh start");
+      await newGit.push(["--force", "origin", "main"]);
       console.log("✅ Repositório recriado com sucesso!");
     } catch (altError) {
       console.error("❌ Erro no método alternativo:", altError.message);
