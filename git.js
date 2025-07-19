@@ -16,7 +16,7 @@ if (fs.existsSync(lockFile)) {
   process.exit(1);
 }
 
-// Verifica se há processos Node.js rodando
+// Verifica se há processos Node.js rodando (aceita até 5 processos)
 import { execSync } from "child_process";
 try {
   const nodeProcesses = execSync(
@@ -24,10 +24,14 @@ try {
     { encoding: "utf8" }
   );
   const processCount = (nodeProcesses.match(/node.exe/g) || []).length;
-  if (processCount > 1) {
-    console.log(`⚠️  Há ${processCount} processos Node.js rodando!`);
+  if (processCount > 5) {
+    console.log(
+      `⚠️  Há ${processCount} processos Node.js rodando! (máximo: 5)`
+    );
     console.log("💡 Execute: taskkill /f /im node.exe");
     process.exit(1);
+  } else {
+    console.log(`✅ ${processCount} processos Node.js detectados (aceito)`);
   }
 } catch (error) {
   console.log("⚠️  Não foi possível verificar processos Node.js");
