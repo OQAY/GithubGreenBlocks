@@ -39,6 +39,33 @@ console.log("🔍 DEBUG: Teste ultra controlado...");
       console.log(`   ${i + 1}. ${commit.message} (${commit.date})`);
     });
 
+    console.log(
+      "⏰ Aguardando 5 segundos para verificar commits automáticos..."
+    );
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
+    console.log("8️⃣ Verificando commits após 5 segundos:");
+    const logAfter5s = await git.log();
+    console.log("📝 Commits após 5s:", logAfter5s.all.length);
+    console.log(
+      "📊 Diferença em 5s:",
+      logAfter5s.all.length - logAfter.all.length
+    );
+
+    if (logAfter5s.all.length > logAfter.all.length) {
+      console.log("🚨 COMMITS AUTOMÁTICOS DETECTADOS!");
+      console.log("📝 Novos commits criados automaticamente:");
+      const newCommits = logAfter5s.all.slice(
+        0,
+        logAfter5s.all.length - logAfter.all.length
+      );
+      newCommits.forEach((commit, i) => {
+        console.log(`   ${i + 1}. ${commit.message} (${commit.date})`);
+      });
+    } else {
+      console.log("✅ Nenhum commit automático detectado");
+    }
+
     console.log("🎯 DEBUG CONCLUÍDO!");
   } catch (error) {
     console.error("❌ Erro no debug:", error.message);
