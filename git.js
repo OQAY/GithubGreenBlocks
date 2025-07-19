@@ -2,8 +2,39 @@ import jsonfile from "jsonfile";
 import moment from "moment";
 import simpleGit from "simple-git";
 import random from "random";
+import fs from "fs";
 
 const path = "./data.json";
+const lockFile = "./git-script.lock";
+
+// Verifica se o script já está rodando
+if (fs.existsSync(lockFile)) {
+  console.log("⚠️  Script já está em execução!");
+  console.log(
+    "💡 Aguarde a execução anterior terminar ou delete o arquivo git-script.lock"
+  );
+  process.exit(1);
+}
+
+// Verifica se há processos Node.js rodando
+import { execSync } from "child_process";
+try {
+  const nodeProcesses = execSync(
+    'tasklist /FI "IMAGENAME eq node.exe" /FO CSV',
+    { encoding: "utf8" }
+  );
+  const processCount = (nodeProcesses.match(/node.exe/g) || []).length;
+  if (processCount > 1) {
+    console.log(`⚠️  Há ${processCount} processos Node.js rodando!`);
+    console.log("💡 Execute: taskkill /f /im node.exe");
+    process.exit(1);
+  }
+} catch (error) {
+  console.log("⚠️  Não foi possível verificar processos Node.js");
+}
+
+// Cria arquivo de lock
+fs.writeFileSync(lockFile, Date.now().toString());
 
 /**
  * Cria commits no Git com datas aleatórias no passado
@@ -13,9 +44,17 @@ const createCommits = async (commitCount) => {
   try {
     const git = simpleGit();
 
-    // Força a configuração do remote correto
-    await git.removeRemote("origin");
-    await git.addRemote("origin", "https://github.com/OQAY/CommitLovers.git");
+    // Verifica se já existem commits recentes (TEMPORÁRIO: aceita commits existentes)
+    try {
+      const log = await git.log();
+      if (log.all.length > 0) {
+        console.log(`⚠️  Já existem ${log.all.length} commits no repositório`);
+        console.log("🔄 TESTE: Continuando mesmo com commits existentes...");
+        // process.exit(0); // ← COMENTADO PARA TESTE
+      }
+    } catch (error) {
+      console.log("📝 Repositório limpo, criando novos commits...");
+    }
 
     // Verifica se estamos em um repositório Git
     const isRepo = await git.checkIsRepo();
@@ -23,22 +62,37 @@ const createCommits = async (commitCount) => {
       throw new Error("Não é um repositório Git válido");
     }
 
-    // Verifica se já existem commits
-    const log = await git.log();
-    if (log.all.length > 0) {
-      console.log(`⚠️  Já existem ${log.all.length} commits no repositório`);
-      console.log("💡 Execute 'node clean-commits.js' para limpar primeiro");
-      return;
+    // Configura remote apenas se não existir
+    try {
+      await git.getRemotes();
+    } catch (error) {
+      await git.addRemote("origin", "https://github.com/OQAY/Test1.git");
     }
 
     console.log(`Iniciando criação de ${commitCount} commits...`);
 
+    // Verifica se há commits pendentes
+    const status = await git.status();
+    if (status.staged.length > 0 || status.modified.length > 0) {
+      console.log("⚠️  Há arquivos modificados. Fazendo commit inicial...");
+      await git.add(".");
+      await git.commit("Initial commit");
+    }
+
     for (let i = 0; i < commitCount; i++) {
-      // Verificação de segurança
-      if (i > 100) {
-        console.log("⚠️  Limite de segurança atingido (100 commits)");
+      // Verificação de segurança mais rigorosa
+      if (i >= commitCount) {
+        console.log("✅ Número de commits atingido");
         break;
       }
+
+      // Verificação adicional de segurança
+      if (i > 5) {
+        console.log("⚠️  Limite de segurança atingido (5 commits)");
+        break;
+      }
+
+      console.log(`🔄 Loop ${i + 1}/${commitCount}`);
 
       // Gera semanas e dias aleatórios para o passado
       const weeksAgo = random.int(0, 54);
@@ -66,6 +120,9 @@ const createCommits = async (commitCount) => {
       // Adiciona e faz commit com a data específica
       await git.add([path]);
       await git.commit(commitDate, { "--date": commitDate });
+
+      // Delay para evitar execução muito rápida
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     // Faz push para o repositório remoto
@@ -83,7 +140,11 @@ const createCommits = async (commitCount) => {
     console.log("✅ Todos os commits foram criados com sucesso!");
   } catch (error) {
     console.error("❌ Erro durante a criação dos commits:", error.message);
-    process.exit(1);
+  } finally {
+    // Remove arquivo de lock
+    if (fs.existsSync(lockFile)) {
+      fs.unlinkSync(lockFile);
+    }
   }
 };
 
